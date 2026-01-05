@@ -1,0 +1,296 @@
+#include <iostream>
+#include <cstring>
+#include <clocale>
+using namespace std;
+
+int main() {
+    setlocale(LC_ALL, "RU");
+    char text[256];
+    char* words[100];
+    int cnt = 0;
+    
+    cout << "Введите строку: ";
+    cin.getline(text, 255);
+    
+    // Разбиваем строку на слова
+    char* word = strtok(text, " ");
+    while(word != NULL && cnt < 100) {
+        words[cnt] = word;
+        cnt++;
+        word = strtok(NULL, " ");
+    }
+    
+    cout << "\nИсходные слова (" << cnt << "): ";
+    for(int i = 0; i < cnt; i++) cout << words[i] << " ";
+    cout << endl;
+    
+    // === ЗАДАНИЕ 1 ===
+    cout << "\n1. Слова, начинающиеся и заканчивающиеся на одну букву: ";
+    int count1 = 0;
+    for(int i = 0; i < cnt; i++) {
+        int len = 0;
+        while(words[i][len]) len++;
+        if(len > 0 && words[i][0] == words[i][len-1]) {
+            cout << words[i] << " ";
+            count1++;
+        }
+    }
+    cout << "\n   Количество: " << count1 << endl;
+    
+    // === ЗАДАНИЕ 2 ===
+    cout << "\n2. Удаление слов заданной длины" << endl;
+    cout << "Введите длину для удаления: ";
+    int lenToRemove;
+    cin >> lenToRemove;
+    
+    int k = 0;  // Изменено: используем другую переменную
+    while(k < cnt) {
+        int len = 0;
+        while(words[k][len]) len++;
+        if(len == lenToRemove) {
+            for(int j = k; j < cnt-1; j++) {
+                words[j] = words[j+1];
+            }
+            cnt--;
+        } else {
+            k++;
+        }
+    }
+    cin.ignore();  // ДОБАВЛЕНО: очистка буфера после cin
+    cout << "   После удаления (" << cnt << " слов): ";
+    for(int i = 0; i < cnt; i++) cout << words[i] << " ";
+    cout << endl;
+    
+    // === ЗАДАНИЕ 3 ===
+    cout << "\n3. Слова без повторяющихся букв: ";
+    char* uniqueLetters[100];
+    int uniqueCnt = 0;
+    
+    for(int i = 0; i < cnt; i++) {
+        bool hasRepeat = false;
+        int seen[256] = {0};
+        
+        for(int j = 0; words[i][j]; j++) {
+            unsigned char c = words[i][j];
+            if(seen[c]) {
+                hasRepeat = true;
+                break;
+            }
+            seen[c] = 1;
+        }
+        
+        if(!hasRepeat) {
+            uniqueLetters[uniqueCnt] = words[i];
+            uniqueCnt++;
+            cout << words[i] << " ";
+        }
+    }
+    cout << "\n   Всего: " << uniqueCnt << " слов" << endl;
+    
+    // === ЗАДАНИЕ 4 ===
+    cout << "\n4. Номера слов с повторяющимися символами: ";
+    for(int i = 0; i < cnt; i++) {
+        bool hasRepeat = false;
+        int seen[256] = {0};
+        
+        for(int j = 0; words[i][j]; j++) {
+            unsigned char c = words[i][j];
+            if(seen[c]) {
+                hasRepeat = true;
+                break;
+            }
+            seen[c] = 1;
+        }
+        
+        if(hasRepeat) {
+            cout << i+1 << " "; // +1 чтобы с 1 начинать
+        }
+    }
+    cout << endl;
+    
+    // === ЗАДАНИЕ 5 ===
+    cout << "\n5. Обмен слов местами" << endl;
+    if(cnt >= 2) {
+        cout << "Введите номера двух слов для обмена (от 1 до " << cnt << "): ";
+        int num1, num2;
+        cin >> num1 >> num2;
+        num1--; num2--;
+        
+        if(num1 >= 0 && num1 < cnt && num2 >= 0 && num2 < cnt) {
+            char* temp = words[num1];
+            words[num1] = words[num2];
+            words[num2] = temp;
+            cout << "   После обмена: ";
+            for(int i = 0; i < cnt; i++) cout << words[i] << " ";
+        } else {
+            cout << "   Некорректные номера!";
+        }
+    } else {
+        cout << "   Недостаточно слов для обмена!";
+    }
+    cout << endl;
+    
+    // === ЗАДАНИЕ 6 ===
+    cout << "\n6. Обмен самого длинного и самого короткого слова" << endl;
+    if(cnt >= 2) {
+        int maxLen = 0, minLen = 1000;
+        int maxIdx = 0, minIdx = 0;
+        
+        for(int i = 0; i < cnt; i++) {
+            int len = 0;
+            while(words[i][len]) len++;
+            
+            if(len > maxLen) { maxLen = len; maxIdx = i; }
+            if(len < minLen) { minLen = len; minIdx = i; }
+        }
+        
+        if(maxIdx != minIdx) {
+            char* temp = words[maxIdx];
+            words[maxIdx] = words[minIdx];
+            words[minIdx] = temp;
+            cout << "   Поменяли: '" << words[maxIdx] << "' и '" << words[minIdx] << "'" << endl;
+        } else {
+            cout << "   Все слова одинаковой длины!" << endl;
+        }
+    }
+    
+    // === ЗАДАНИЕ 7 ===
+    cout << "\n7. Самое длинное слово с уникальными буквами: ";
+    char* longestUnique = NULL;
+    int maxUniqueLen = 0;
+    
+    for(int i = 0; i < cnt; i++) {
+        bool unique = true;
+        int seen[256] = {0};
+        
+        for(int j = 0; words[i][j]; j++) {
+            unsigned char c = words[i][j];
+            if(seen[c]) { unique = false; break; }
+            seen[c] = 1;
+        }
+        
+        if(unique) {
+            int len = 0;
+            while(words[i][len]) len++;
+            if(len > maxUniqueLen) {
+                maxUniqueLen = len;
+                longestUnique = words[i];
+            }
+        }
+    }
+    
+    if(longestUnique != NULL) {
+        cout << longestUnique << " (длина: " << maxUniqueLen << ")" << endl;
+    } else {
+        cout << "не найдено" << endl;
+    }
+    
+    // === ЗАДАНИЕ 8 ===
+    cout << "\n8. Слова с более чем 2 русскими гласными: ";
+    // Используем массив unsigned char для русских букв
+    unsigned char vowels[] = {0xE0, 0xE5, 0xB8, 0xE8, 0xEE, 0xF3, 0xFB, 0xFD, 0xFE, 0xFF,  // строчные
+                              0xC0, 0xC5, 0x98, 0xC8, 0xCE, 0xD3, 0xDB, 0xDD, 0xDE, 0xDF, 0}; // прописные
+    
+    for(int i = 0; i < cnt; i++) {
+        int vowelCount = 0;
+        
+        for(int j = 0; words[i][j]; j++) {
+            unsigned char c = words[i][j];
+            bool isVowel = false;
+            
+            // Ручной поиск в массиве vowels
+            for(int k = 0; vowels[k]; k++) {
+                if(c == vowels[k]) {
+                    isVowel = true;
+                    break;
+                }
+            }
+            
+            if(isVowel) vowelCount++;
+        }
+        
+        if(vowelCount > 2) {
+            cout << words[i] << " ";
+        }
+    }
+    cout << endl;
+    
+    // === ЗАДАНИЕ 9 ===
+    cout << "\n9. Номер самого длинного палиндрома: ";
+    int maxPalLen = 0;
+    int maxPalNum = -1;
+    
+    for(int i = 0; i < cnt; i++) {
+        int len = 0;
+        while(words[i][len]) len++;
+        
+        bool isPal = true;
+        for(int j = 0; j < len/2; j++) {
+            if(words[i][j] != words[i][len-1-j]) {
+                isPal = false;
+                break;
+            }
+        }
+        
+        if(isPal && len > maxPalLen) {
+            maxPalLen = len;
+            maxPalNum = i + 1;
+        }
+    }
+    
+    if(maxPalNum != -1) {
+        cout << maxPalNum << " (длина: " << maxPalLen << ")" << endl;
+    } else {
+        cout << "палиндромов нет" << endl;
+    }
+    
+    // === ЗАДАНИЕ 10 ===
+    cout << "\n10. Удаление самых длинных палиндромов" << endl;
+    
+    int maxPalLength = 0;
+    for(int i = 0; i < cnt; i++) {
+        int len = 0;
+        while(words[i][len]) len++;
+        
+        bool isPal = true;
+        for(int j = 0; j < len/2; j++) {
+            if(words[i][j] != words[i][len-1-j]) {
+                isPal = false;
+                break;
+            }
+        }
+        
+        if(isPal && len > maxPalLength) {
+            maxPalLength = len;
+        }
+    }
+    
+    int idx = 0;  // Изменено: другая переменная
+    while(idx < cnt) {
+        int len = 0;
+        while(words[idx][len]) len++;
+        
+        bool isPal = true;
+        for(int j = 0; j < len/2; j++) {
+            if(words[idx][j] != words[idx][len-1-j]) {
+                isPal = false;
+                break;
+            }
+        }
+        
+        if(isPal && len == maxPalLength) {
+            for(int j = idx; j < cnt-1; j++) {
+                words[j] = words[j+1];
+            }
+            cnt--;
+        } else {
+            idx++;
+        }
+    }
+    
+    cout << "   После удаления (" << cnt << " слов): ";
+    for(int i = 0; i < cnt; i++) cout << words[i] << " ";
+    cout << endl;
+    
+    return 0;
+}
