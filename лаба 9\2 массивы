@@ -1,0 +1,115 @@
+#include <iostream>
+#include "lib.hpp" 
+using namespace std;
+
+int main() {
+    int* arr = nullptr;
+    int size = 0;         
+
+    bool arrayCreated = false; 
+    bool arrayInput = false;   
+    bool canInputOrDelete = false;
+
+    int choice;
+
+    do {
+        cout << "\n=== МЕНЮ ===\n";
+        cout << (arrayCreated ? "1. Создать массив (неактивен)\n" : "1. Создать массив\n");
+        cout << (canInputOrDelete ? "2. Ввести массив\n" : "2. Ввести массив (неактивен)\n");
+        cout << (arrayInput ? "3. Найти максимум\n" : "3. Найти максимум (неактивен)\n");
+        cout << (arrayInput ? "4. Найти сумму\n" : "4. Найти сумму (неактивен)\n");
+        cout << (arrayInput ? "5. Отсортировать\n" : "5. Отсортировать (неактивен)\n");
+        cout << (arrayInput ? "6. Вывести массив\n" : "6. Вывести массив (неактивен)\n");
+        cout << (canInputOrDelete ? "7. Удалить массив\n" : "7. Удалить массив (неактивен)\n");
+        cout << "8. Выход\n";
+
+        cout << "Выберите пункт меню: ";
+        cin >> choice;
+
+        switch(choice) {
+            case 1: // Создать массив
+                if (!arrayCreated) {
+                    cout << "Введите размер массива: ";
+                    cin >> size;
+                    arr = new int[size]; // создаём массив
+                    arrayCreated = true;
+                    canInputOrDelete = true;
+                    arrayInput = false;
+                    cout << "Массив создан!\n";
+                } else {
+                    cout << "Массив уже создан!\n";
+                }
+                break;
+
+            case 2: // Ввести массив
+                if (canInputOrDelete) {
+                    inputArray(arr, size); // функция из библиотеки
+                    arrayInput = true; // теперь можно использовать пункты 3-6
+                    cout << "Массив введен!\n";
+                } else {
+                    cout << "Сначала создайте массив!\n";
+                }
+                break;
+
+            case 3: // Найти максимум
+                if (arrayInput) {
+                    maxmin(arr, size); // выводит макс и мин
+                } else {
+                    cout << "Сначала введите массив!\n";
+                }
+                break;
+
+            case 4: // Найти сумму
+                if (arrayInput) {
+                    sum_prod(arr, size); // выводит сумму и произведение
+                } else {
+                    cout << "Сначала введите массив!\n";
+                }
+                break;
+
+            case 5: // Отсортировать
+                if (arrayInput) {
+                    sortup(arr, size);
+                    cout << "Массив отсортирован!\n";
+                } else {
+                    cout << "Сначала введите массив!\n";
+                }
+                break;
+
+            case 6: // Вывести массив
+                if (arrayInput) {
+                    outputArray(arr, size);
+                    cout << endl;
+                } else {
+                    cout << "Сначала введите массив!\n";
+                }
+                break;
+
+            case 7: // Удалить массив
+                if (canInputOrDelete) {
+                    delete[] arr;
+                    arr = nullptr;
+                    size = 0;
+                    arrayCreated = false;
+                    arrayInput = false;
+                    canInputOrDelete = false;
+                    cout << "Массив удален!\n";
+                } else {
+                    cout << "Массив не создан!\n";
+                }
+                break;
+
+            case 8: // Выход
+                cout << "Выход из программы.\n";
+                break;
+
+            default:
+                cout << "Неверный пункт меню!\n";
+                break;
+        }
+
+    } while(choice != 8);
+
+    delete[] arr;
+    return 0;
+}
