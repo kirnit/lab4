@@ -1,0 +1,70 @@
+#include <iostream>
+#include <cstring>
+#include <cctype>   // для tolower, toupper
+#include <cstdlib>  // для size_t
+#include <cstdio>   // для setlocale
+#include <windows.h>
+#include <clocale>
+
+using namespace std;
+
+int main()
+{
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    setlocale(LC_ALL, "RU");
+
+    char str[256];
+
+    // === 1. Перевод регистра ===
+    cout << "Введите строку для перевода регистра: ";
+    cin.getline(str, 256);
+
+    int reg;
+    cout << "Выберите регистр (0 - нижний, 1 - верхний): ";
+    cin >> reg;
+    cin.ignore(); // очищаем буфер после ввода числа
+
+    for (size_t i = 0; i < strlen(str); i++) {
+        str[i] = (reg == 0) ? tolower((unsigned char)str[i]) : toupper((unsigned char)str[i]);
+    }
+
+    cout << "Результат перевода регистра: " << str << endl << endl;
+
+    // === 2. Переворот всей фразы ===
+    cout << "Введите строку для переворота всей фразы: ";
+    cin.getline(str, 256);
+
+    size_t len = strlen(str);
+    for (size_t i = 0; i < len / 2; i++) {
+        char tmp = str[i];
+        str[i] = str[len - 1 - i];
+        str[len - 1 - i] = tmp;
+    }
+
+    cout << "Перевернутая фраза: " << str << endl << endl;
+
+    // === 3. Переворот слов ===
+    cout << "Введите строку для переворота слов: ";
+    cin.getline(str, 256);
+
+    char result[256] = "";
+    char* token = strtok(str, " ");
+    while (token != nullptr) {
+        size_t word_len = strlen(token);
+        for (size_t i = 0; i < word_len / 2; i++) {
+            char tmp = token[i];
+            token[i] = token[word_len - 1 - i];
+            token[word_len - 1 - i] = tmp;
+        }
+
+        strcat(result, token);
+        strcat(result, " ");
+
+        token = strtok(nullptr, " ");
+    }
+
+    cout << "Фраза с перевернутыми словами: " << result << endl;
+
+    return 0;
+}
