@@ -1,0 +1,154 @@
+#include <iostream>
+#include <cmath>
+#include <fstream>
+#include <cstring>
+#include <windows.h>
+#include <clocale>
+
+using namespace std;
+
+// ==================== ЗАДАНИЕ 1: Комплексные числа ====================
+struct Complex {
+    double x; // действительная часть
+    double y; // мнимая часть
+};
+
+Complex addComplex(const Complex& a, const Complex& b) {
+    Complex res;
+    res.x = a.x + b.x;
+    res.y = a.y + b.y;
+    return res;
+}
+
+Complex mulComplex(const Complex& a, const Complex& b) {
+    Complex res;
+    res.x = a.x * b.x - a.y * b.y;
+    res.y = a.x * b.y + a.y * b.x;
+    return res;
+}
+
+void printComplex(const Complex& c) {
+    cout << c.x;
+    if (c.y >= 0) cout << "+";
+    cout << c.y << "i" << endl;
+}
+
+// ==================== ЗАДАНИЕ 2: Расстояние между точками ====================
+struct Point {
+    float x, y;
+};
+
+double distance(const Point& A, const Point& B) {
+    return sqrt((B.x - A.x)*(B.x - A.x) + (B.y - A.y)*(B.y - A.y));
+}
+
+// ==================== ЗАДАНИЕ 3 и 4: Товары ====================
+struct Item {
+    char name[50];
+    unsigned short qty;
+    unsigned int price;
+};
+
+void printItems(const Item items[], int size) {
+    cout << "\nСписок товаров:\n";
+    cout << "Название\tКоличество\tЦена\n";
+    for (int i = 0; i < size; i++) {
+        cout << items[i].name << "\t" << items[i].qty << "\t\t" << items[i].price << endl;
+    }
+}
+
+void editItems(Item items[], int size) {
+    for (int i = 0; i < size; i++) {
+        cout << "\nКорректировка товара: " << items[i].name << endl;
+        cout << "Новое количество (текущее " << items[i].qty << "): ";
+        cin >> items[i].qty;
+        cout << "Новая цена (текущая " << items[i].price << "): ";
+        cin >> items[i].price;
+    }
+}
+
+// Функции для работы с бинарным файлом
+void saveItemsToFile(const char* filename, const Item items[], int size) {
+    ofstream file(filename, ios::binary);
+    if (!file) {
+        cout << "Ошибка открытия файла для записи!\n";
+        return;
+    }
+    file.write((char*)&size, sizeof(int));
+    file.write((char*)items, sizeof(Item) * size);
+    file.close();
+}
+
+int loadItemsFromFile(const char* filename, Item items[], int maxSize) {
+    ifstream file(filename, ios::binary);
+    if (!file) return 0; // файл не найден, вернем 0
+    int size;
+    file.read((char*)&size, sizeof(int));
+    if (size > maxSize) size = maxSize;
+    file.read((char*)items, sizeof(Item) * size);
+    file.close();
+    return size;
+}
+
+// ==================== MAIN ====================
+int main() {
+
+
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    setlocale(LC_ALL, "Russian"); // кириллица в консоли Windows
+
+    // --- Задание 1 ---
+    Complex a, b;
+    cout << "=== Задание 1: Комплексные числа ===\n";
+    cout << "Введите первое комплексное число (действительная часть, мнимая часть): ";
+    cin >> a.x >> a.y;
+    cout << "Введите второе комплексное число (действительная часть, мнимая часть): ";
+    cin >> b.x >> b.y;
+
+    Complex sum = addComplex(a, b);
+    Complex prod = mulComplex(a, b);
+
+    cout << "Сумма: "; printComplex(sum);
+    cout << "Произведение: "; printComplex(prod);
+
+    // --- Задание 2 ---
+    Point A, B;
+    cout << "\n=== Задание 2: Расстояние между точками ===\n";
+    cout << "Введите координаты точки A (x y): ";
+    cin >> A.x >> A.y;
+    cout << "Введите координаты точки B (x y): ";
+    cin >> B.x >> B.y;
+
+    cout << "Расстояние между точками: " << distance(A, B) << endl;
+
+    // --- Задание 3 и 4 ---
+    const int MAX_ITEMS = 5;
+    Item items[MAX_ITEMS] = {
+        "Pentium G3220", 8, 4100,
+        "AMD FX-6300", 6, 5700,
+        "Core-i3-4330", 9, 6500,
+        "Core i5-11500", 5, 15700,
+        "Core i5-4670K", 3, 9500
+    };
+
+    const char* FILENAME = "items.bin";
+
+    // Загружаем из файла (если есть)
+    int sizeItems = loadItemsFromFile(FILENAME, items, MAX_ITEMS);
+    if (sizeItems == 0) sizeItems = MAX_ITEMS;
+
+    cout << "\n=== Задание 3 и 4: Товары ===\n";
+    printItems(items, sizeItems);
+
+    // Корректируем
+    editItems(items, sizeItems);
+
+    cout << "\nОбновленный список товаров:\n";
+    printItems(items, sizeItems);
+
+    // Сохраняем в файл
+    saveItemsToFile(FILENAME, items, sizeItems);
+
+    return 0;
+}
