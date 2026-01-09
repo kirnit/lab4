@@ -1,296 +1,348 @@
 #include <iostream>
 #include <cstring>
-#include <clocale>
+#include <windows.h>
+
 using namespace std;
 
+bool isRussianVowel(char c) {
+    char vowels[] = "аеёиоуыэюяАЕЁИОУЫЭЮЯ";
+    return strchr(vowels, c) != nullptr;
+}
+
 int main() {
-    setlocale(LC_ALL, "RU");
-    char text[256];
-    char* words[100];
-    int cnt = 0;
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    
+    const int MAX_LENGTH = 1000;
+    char str[MAX_LENGTH];
+    char temp[MAX_LENGTH];
     
     cout << "Введите строку: ";
-    cin.getline(text, 255);
+    cin.getline(str, MAX_LENGTH);
     
-    // Разбиваем строку на слова
-    char* word = strtok(text, " ");
-    while(word != NULL && cnt < 100) {
-        words[cnt] = word;
-        cnt++;
-        word = strtok(NULL, " ");
+    strcpy(temp, str);
+    
+    // 1
+    cout << "\n№1" << endl;
+    int wordCount = 0;
+    char *word = strtok(temp, " ");
+    while (word != nullptr) {
+        int len = strlen(word);
+        if (len > 0 && word[0] == word[len - 1]) {
+            wordCount++;
+        }
+        word = strtok(nullptr, " ");
     }
+    cout << "Количество слов, начинающихся и заканчивающихся на одну букву: " << wordCount << endl;
     
-    cout << "\nИсходные слова (" << cnt << "): ";
-    for(int i = 0; i < cnt; i++) cout << words[i] << " ";
-    cout << endl;
+    // 2
+    cout << "\n№2" << endl;
+    strcpy(temp, str);
+    int targetLength;
+    cout << "Введите запретную длину: ";
+    cin >> targetLength;
+    cin.ignore(); 
     
-    // === ЗАДАНИЕ 1 ===
-    cout << "\n1. Слова, начинающиеся и заканчивающиеся на одну букву: ";
-    int count1 = 0;
-    for(int i = 0; i < cnt; i++) {
-        int len = 0;
-        while(words[i][len]) len++;
-        if(len > 0 && words[i][0] == words[i][len-1]) {
-            cout << words[i] << " ";
-            count1++;
+    char result2[MAX_LENGTH] = "";
+    word = strtok(temp, " ");
+    while (word != nullptr) {
+        if (strlen(word) != targetLength) {
+            strcat(result2, word);
+            strcat(result2, " ");
         }
+        word = strtok(nullptr, " ");
     }
-    cout << "\n   Количество: " << count1 << endl;
+    cout << "Строка после удаления слов длиной " << targetLength << ": " << result2 << endl;
     
-    // === ЗАДАНИЕ 2 ===
-    cout << "\n2. Удаление слов заданной длины" << endl;
-    cout << "Введите длину для удаления: ";
-    int lenToRemove;
-    cin >> lenToRemove;
+    // 3
+    cout << "\nЗадание 3" << endl;
+    strcpy(temp, str);
+    char uniqueWords[50][100]; 
+    int uniqueCount = 0;
     
-    int k = 0;  // Изменено: используем другую переменную
-    while(k < cnt) {
-        int len = 0;
-        while(words[k][len]) len++;
-        if(len == lenToRemove) {
-            for(int j = k; j < cnt-1; j++) {
-                words[j] = words[j+1];
-            }
-            cnt--;
-        } else {
-            k++;
-        }
-    }
-    cin.ignore();  // ДОБАВЛЕНО: очистка буфера после cin
-    cout << "   После удаления (" << cnt << " слов): ";
-    for(int i = 0; i < cnt; i++) cout << words[i] << " ";
-    cout << endl;
-    
-    // === ЗАДАНИЕ 3 ===
-    cout << "\n3. Слова без повторяющихся букв: ";
-    char* uniqueLetters[100];
-    int uniqueCnt = 0;
-    
-    for(int i = 0; i < cnt; i++) {
-        bool hasRepeat = false;
-        int seen[256] = {0};
+    word = strtok(temp, " ");
+    while (word != nullptr) {
+        bool hasDuplicate = false;
+        int len = strlen(word);
         
-        for(int j = 0; words[i][j]; j++) {
-            unsigned char c = words[i][j];
-            if(seen[c]) {
-                hasRepeat = true;
-                break;
-            }
-            seen[c] = 1;
-        }
-        
-        if(!hasRepeat) {
-            uniqueLetters[uniqueCnt] = words[i];
-            uniqueCnt++;
-            cout << words[i] << " ";
-        }
-    }
-    cout << "\n   Всего: " << uniqueCnt << " слов" << endl;
-    
-    // === ЗАДАНИЕ 4 ===
-    cout << "\n4. Номера слов с повторяющимися символами: ";
-    for(int i = 0; i < cnt; i++) {
-        bool hasRepeat = false;
-        int seen[256] = {0};
-        
-        for(int j = 0; words[i][j]; j++) {
-            unsigned char c = words[i][j];
-            if(seen[c]) {
-                hasRepeat = true;
-                break;
-            }
-            seen[c] = 1;
-        }
-        
-        if(hasRepeat) {
-            cout << i+1 << " "; // +1 чтобы с 1 начинать
-        }
-    }
-    cout << endl;
-    
-    // === ЗАДАНИЕ 5 ===
-    cout << "\n5. Обмен слов местами" << endl;
-    if(cnt >= 2) {
-        cout << "Введите номера двух слов для обмена (от 1 до " << cnt << "): ";
-        int num1, num2;
-        cin >> num1 >> num2;
-        num1--; num2--;
-        
-        if(num1 >= 0 && num1 < cnt && num2 >= 0 && num2 < cnt) {
-            char* temp = words[num1];
-            words[num1] = words[num2];
-            words[num2] = temp;
-            cout << "   После обмена: ";
-            for(int i = 0; i < cnt; i++) cout << words[i] << " ";
-        } else {
-            cout << "   Некорректные номера!";
-        }
-    } else {
-        cout << "   Недостаточно слов для обмена!";
-    }
-    cout << endl;
-    
-    // === ЗАДАНИЕ 6 ===
-    cout << "\n6. Обмен самого длинного и самого короткого слова" << endl;
-    if(cnt >= 2) {
-        int maxLen = 0, minLen = 1000;
-        int maxIdx = 0, minIdx = 0;
-        
-        for(int i = 0; i < cnt; i++) {
-            int len = 0;
-            while(words[i][len]) len++;
-            
-            if(len > maxLen) { maxLen = len; maxIdx = i; }
-            if(len < minLen) { minLen = len; minIdx = i; }
-        }
-        
-        if(maxIdx != minIdx) {
-            char* temp = words[maxIdx];
-            words[maxIdx] = words[minIdx];
-            words[minIdx] = temp;
-            cout << "   Поменяли: '" << words[maxIdx] << "' и '" << words[minIdx] << "'" << endl;
-        } else {
-            cout << "   Все слова одинаковой длины!" << endl;
-        }
-    }
-    
-    // === ЗАДАНИЕ 7 ===
-    cout << "\n7. Самое длинное слово с уникальными буквами: ";
-    char* longestUnique = NULL;
-    int maxUniqueLen = 0;
-    
-    for(int i = 0; i < cnt; i++) {
-        bool unique = true;
-        int seen[256] = {0};
-        
-        for(int j = 0; words[i][j]; j++) {
-            unsigned char c = words[i][j];
-            if(seen[c]) { unique = false; break; }
-            seen[c] = 1;
-        }
-        
-        if(unique) {
-            int len = 0;
-            while(words[i][len]) len++;
-            if(len > maxUniqueLen) {
-                maxUniqueLen = len;
-                longestUnique = words[i];
-            }
-        }
-    }
-    
-    if(longestUnique != NULL) {
-        cout << longestUnique << " (длина: " << maxUniqueLen << ")" << endl;
-    } else {
-        cout << "не найдено" << endl;
-    }
-    
-    // === ЗАДАНИЕ 8 ===
-    cout << "\n8. Слова с более чем 2 русскими гласными: ";
-    // Используем массив unsigned char для русских букв
-    unsigned char vowels[] = {0xE0, 0xE5, 0xB8, 0xE8, 0xEE, 0xF3, 0xFB, 0xFD, 0xFE, 0xFF,  // строчные
-                              0xC0, 0xC5, 0x98, 0xC8, 0xCE, 0xD3, 0xDB, 0xDD, 0xDE, 0xDF, 0}; // прописные
-    
-    for(int i = 0; i < cnt; i++) {
-        int vowelCount = 0;
-        
-        for(int j = 0; words[i][j]; j++) {
-            unsigned char c = words[i][j];
-            bool isVowel = false;
-            
-            // Ручной поиск в массиве vowels
-            for(int k = 0; vowels[k]; k++) {
-                if(c == vowels[k]) {
-                    isVowel = true;
+        for (int i = 0; i < len && !hasDuplicate; i++) {
+            for (int j = i + 1; j < len; j++) {
+                if (word[i] == word[j]) {
+                    hasDuplicate = true;
                     break;
                 }
             }
-            
-            if(isVowel) vowelCount++;
         }
         
-        if(vowelCount > 2) {
-            cout << words[i] << " ";
+        if (!hasDuplicate) {
+            strcpy(uniqueWords[uniqueCount], word);
+            uniqueCount++;
         }
+        word = strtok(nullptr, " ");
     }
-    cout << endl;
     
-    // === ЗАДАНИЕ 9 ===
-    cout << "\n9. Номер самого длинного палиндрома: ";
-    int maxPalLen = 0;
-    int maxPalNum = -1;
+    cout << "Слова без повторяющихся букв (" << uniqueCount << " штук):" << endl;
+    for (int i = 0; i < uniqueCount; i++) {
+        cout << i + 1 << ". " << uniqueWords[i] << endl;
+    }
     
-    for(int i = 0; i < cnt; i++) {
-        int len = 0;
-        while(words[i][len]) len++;
+    // 4
+    cout << "\n№4" << endl;
+    strcpy(temp, str);
+    int duplicateWordNumbers[100];
+    int duplicateCount = 0;
+    int currentWordNumber = 1;
+    
+    word = strtok(temp, " ");
+    while (word != nullptr) {
+        bool hasDuplicate = false;
+        int len = strlen(word);
         
-        bool isPal = true;
-        for(int j = 0; j < len/2; j++) {
-            if(words[i][j] != words[i][len-1-j]) {
-                isPal = false;
-                break;
+        for (int i = 0; i < len && !hasDuplicate; i++) {
+            for (int j = i + 1; j < len; j++) {
+                if (word[i] == word[j]) {
+                    hasDuplicate = true;
+                    break;
+                }
             }
         }
         
-        if(isPal && len > maxPalLen) {
-            maxPalLen = len;
-            maxPalNum = i + 1;
+        if (hasDuplicate) {
+            duplicateWordNumbers[duplicateCount] = currentWordNumber;
+            duplicateCount++;
         }
+        
+        currentWordNumber++;
+        word = strtok(nullptr, " ");
     }
     
-    if(maxPalNum != -1) {
-        cout << maxPalNum << " (длина: " << maxPalLen << ")" << endl;
+    cout << "Номера слов с повторяющимися символами (" << duplicateCount << " слов):" << endl;
+    for (int i = 0; i < duplicateCount; i++) {
+        cout << duplicateWordNumbers[i] << " ";
+    }
+    cout << endl;
+    
+    // 5
+    cout << "\n№5" << endl;
+    strcpy(temp, str);
+    char words[100][100];
+    int totalWords = 0;
+    
+    char *tempCopy = new char[strlen(str) + 1];
+    strcpy(tempCopy, str);
+    word = strtok(tempCopy, " ");
+    while (word != nullptr) {
+        strcpy(words[totalWords], word);
+        totalWords++;
+        word = strtok(nullptr, " ");
+    }
+    
+    int i, j;
+    cout << "Введите 2 номера слов для обмена (от 1 до " << totalWords << "): ";
+    cin >> i >> j;
+    cin.ignore();
+    
+    if (i >= 1 && i <= totalWords && j >= 1 && j <= totalWords && i != j) {
+        char tempWord[100];
+        strcpy(tempWord, words[i - 1]);
+        strcpy(words[i - 1], words[j - 1]);
+        strcpy(words[j - 1], tempWord);
+        
+        cout << "Строка после обмена слов " << i << " и " << j << ":" << endl;
+        for (int k = 0; k < totalWords; k++) {
+            cout << words[k] << " ";
+        }
+        cout << endl;
     } else {
-        cout << "палиндромов нет" << endl;
+        cout << "Неправильные номера" << endl;
+    }
+    delete[] tempCopy;
+    
+    // 6
+    cout << "\n№6" << endl;
+    strcpy(temp, str);
+    int maxLen = -1, minLen = 1000;
+    int maxIndex = -1, minIndex = -1;
+    
+    tempCopy = new char[strlen(str) + 1];
+    strcpy(tempCopy, str);
+    totalWords = 0;
+    
+    word = strtok(tempCopy, " ");
+    while (word != nullptr) {
+        strcpy(words[totalWords], word);
+        int len = strlen(word);
+        
+        if (len > maxLen) {
+            maxLen = len;
+            maxIndex = totalWords;
+        }
+        if (len < minLen) {
+            minLen = len;
+            minIndex = totalWords;
+        }
+        
+        totalWords++;
+        word = strtok(nullptr, " ");
     }
     
-    // === ЗАДАНИЕ 10 ===
-    cout << "\n10. Удаление самых длинных палиндромов" << endl;
-    
-    int maxPalLength = 0;
-    for(int i = 0; i < cnt; i++) {
-        int len = 0;
-        while(words[i][len]) len++;
+    if (maxIndex != -1 && minIndex != -1 && maxIndex != minIndex) {
+        char tempWord[100];
+        strcpy(tempWord, words[maxIndex]);
+        strcpy(words[maxIndex], words[minIndex]);
+        strcpy(words[minIndex], tempWord);
         
-        bool isPal = true;
-        for(int j = 0; j < len/2; j++) {
-            if(words[i][j] != words[i][len-1-j]) {
-                isPal = false;
+        cout << "Строка после обмена самого длинного и самого короткого слов:" << endl;
+        for (int k = 0; k < totalWords; k++) {
+            cout << words[k] << " ";
+        }
+        cout << endl;
+    }
+    delete[] tempCopy;
+    
+    // 7
+    cout << "\n№7" << endl;
+    strcpy(temp, str);
+    
+    char maxUniqueWord[100] = "";
+    int maxUniqueLen = 0;
+    
+    word = strtok(temp, " ");
+    while (word != nullptr) {
+        int len = strlen(word);
+        bool hasDuplicate = false;
+        for (int k = 0; k < len && !hasDuplicate; k++) {
+            for (int m = k + 1; m < len; m++) {
+                if (word[k] == word[m]) {
+                    hasDuplicate = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!hasDuplicate && len > maxUniqueLen) {
+            maxUniqueLen = len;
+            strcpy(maxUniqueWord, word);
+        }
+        
+        word = strtok(nullptr, " ");
+    }
+    
+    if (maxUniqueLen > 0) {
+        cout << "Слово макс длины с различными символами: " << maxUniqueWord 
+             << " (длина: " << maxUniqueLen << ")" << endl;
+    } else {
+        cout << "Нет слов макс длины с уникальными символами" << endl;
+    }
+    
+    // 8
+    cout << "\n№8" << endl;
+    strcpy(temp, str);
+    
+    cout << "Слова с более чем двумя гласными буквами:" << endl;
+    word = strtok(temp, " ");
+    while (word != nullptr) {
+        int vowelCount = 0;
+        int len = strlen(word);
+        
+        for (int k = 0; k < len; k++) {
+            if (isRussianVowel(word[k])) {
+                vowelCount++;
+            }
+        }
+        
+        if (vowelCount > 2) {
+            cout << word << " (гласных: " << vowelCount << ")" << endl;
+        }
+        
+        word = strtok(nullptr, " ");
+    }
+    
+    // 9
+    cout << "\n№9" << endl;
+    strcpy(temp, str);
+    
+    int maxPalindromeLen = 0;
+    int maxPalindromeNum = -1;
+    currentWordNumber = 1;
+    
+    word = strtok(temp, " ");
+    while (word != nullptr) {
+        int len = strlen(word);
+        bool isPalindrome = true;
+        for (int k = 0; k < len / 2; k++) {
+            if (word[k] != word[len - 1 - k]) {
+                isPalindrome = false;
                 break;
             }
         }
         
-        if(isPal && len > maxPalLength) {
-            maxPalLength = len;
+        if (isPalindrome && len > maxPalindromeLen) {
+            maxPalindromeLen = len;
+            maxPalindromeNum = currentWordNumber;
         }
+        
+        currentWordNumber++;
+        word = strtok(nullptr, " ");
     }
     
-    int idx = 0;  // Изменено: другая переменная
-    while(idx < cnt) {
-        int len = 0;
-        while(words[idx][len]) len++;
+    if (maxPalindromeNum != -1) {
+        cout << "Номер самого длинного слова-палиндрома: " << maxPalindromeNum 
+             << " (длина: " << maxPalindromeLen << ")" << endl;
+    } else {
+        cout << "Нет палиндромов" << endl;
+    }
+    
+    // 10
+    cout << "\nЗадание 10" << endl;
+    strcpy(temp, str);
+    
+    char *tempCopy2 = new char[strlen(str) + 1];
+    strcpy(tempCopy2, str);
+    maxPalindromeLen = 0;
+    
+    word = strtok(tempCopy2, " ");
+    while (word != nullptr) {
+        int len = strlen(word);
+        bool isPalindrome = true;
         
-        bool isPal = true;
-        for(int j = 0; j < len/2; j++) {
-            if(words[idx][j] != words[idx][len-1-j]) {
-                isPal = false;
+        for (int k = 0; k < len / 2; k++) {
+            if (word[k] != word[len - 1 - k]) {
+                isPalindrome = false;
                 break;
             }
         }
         
-        if(isPal && len == maxPalLength) {
-            for(int j = idx; j < cnt-1; j++) {
-                words[j] = words[j+1];
-            }
-            cnt--;
-        } else {
-            idx++;
+        if (isPalindrome && len > maxPalindromeLen) {
+            maxPalindromeLen = len;
         }
+        
+        word = strtok(nullptr, " ");
+    }
+    delete[] tempCopy2;
+    
+    char result10[MAX_LENGTH] = "";
+    word = strtok(temp, " ");
+    while (word != nullptr) {
+        int len = strlen(word);
+        bool isPalindrome = true;
+        
+        for (int k = 0; k < len / 2; k++) {
+            if (word[k] != word[len - 1 - k]) {
+                isPalindrome = false;
+                break;
+            }
+        }
+        if (!(isPalindrome && len == maxPalindromeLen)) {
+            strcat(result10, word);
+            strcat(result10, " ");
+        }
+        
+        word = strtok(nullptr, " ");
     }
     
-    cout << "   После удаления (" << cnt << " слов): ";
-    for(int i = 0; i < cnt; i++) cout << words[i] << " ";
-    cout << endl;
+    cout << "Строка после удаления слов-палиндромов макс длины (" 
+         << maxPalindromeLen << " символов): " << result10 << endl;
     
     return 0;
 }
