@@ -2,640 +2,301 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
-#include <iomanip>
-#include <limits>
+#include <clocale>
 
 using namespace std;
 
-// Структура товара
-struct Product {
-    char name[80];
+// ==================== СТРУКТУРА ====================
+struct Product
+{
+    wchar_t name[80]; // поддержка кириллицы
     long article;
     int quantity;
     double price;
-    char discount; // 0-100 в процентах
+    int discount; // 0–100
 };
 
-// Глобальные переменные
-Product* database = nullptr; // Динамический массив
-int dbSize = 0;              // Количество товаров в базе
-bool isDatabaseLoaded = false;
-const char* FILENAME = "database.dat";
+// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
+Product* db = nullptr;
+int sizeDB = 0;
+bool dbLoaded = false;
 
-// Прототипы функций
-void displayMenu();
-void createNewDB();
-void loadDB();
-void saveDB();
-void addProduct();
-void displayAllProducts();
-void searchByArticle();
-void editProduct(Product& product);
-void deleteProduct(int index);
-void displayDiscountedProducts();
-void displayOutOfStock();
-void sortProducts();
-int compareByName(const void* a, const void* b);
-int compareByArticle(const void* a, const void* b);
-int compareByQuantity(const void* a, const void* b);
-int compareByPrice(const void* a, const void* b);
-void clearInputBuffer();
-bool isValidProduct(const Product& p);
+const char* FILE_NAME = "database.bin";
 
-int main() {
-    setlocale(LC_ALL, "Russian");
-    
-    int choice;
-    
-    do {
-        displayMenu();
-        cout << "Выберите пункт меню: ";
-        cin >> choice;
-        
-        switch(choice) {
-            case 1:
-                createNewDB();
-                break;
-            case 2:
-                loadDB();
-                break;
-            case 3:
-                if(isDatabaseLoaded) saveDB();
-                else cout << "Сначала создайте или загрузите БД!\n";
-                break;
-            case 4:
-                if(isDatabaseLoaded) addProduct();
-                else cout << "Сначала создайте или загрузите БД!\n";
-                break;
-            case 5:
-                if(isDatabaseLoaded) displayAllProducts();
-                else cout << "Сначала создайте или загрузите БД!\n";
-                break;
-            case 6:
-                if(isDatabaseLoaded) searchByArticle();
-                else cout << "Сначала создайте или загрузите БД!\n";
-                break;
-            case 7:
-                if(isDatabaseLoaded) displayDiscountedProducts();
-                else cout << "Сначала создайте или загрузите БД!\n";
-                break;
-            case 8:
-                if(isDatabaseLoaded) displayOutOfStock();
-                else cout << "Сначала создайте или загрузите БД!\n";
-                break;
-            case 9:
-                if(isDatabaseLoaded) sortProducts();
-                else cout << "Сначала создайте или загрузите БД!\n";
-                break;
-            case 0:
-                cout << "Выход из программы.\n";
-                break;
-            default:
-                cout << "Неверный выбор!\n";
-        }
-        
-        cout << "\nНажмите Enter для продолжения...";
-        clearInputBuffer();
-        cin.get();
-        
-    } while(choice != 0);
-    
-    // Освобождаем память при выходе
-    if(database != nullptr) {
-        delete[] database;
+// ==================== ФУНКЦИИ ====================
+
+void createDB()
+{
+    delete[] db;
+    db = nullptr;
+    sizeDB = 0;
+    dbLoaded = true;
+    wcout << L"Новая база данных создана.\n";
+}
+
+void saveDB()
+{
+    ofstream file(FILE_NAME, ios::binary);
+    if (!file)
+    {
+        wcout << L"Ошибка открытия файла для записи!\n";
+        return;
     }
-    
+
+    file.write((char*)&sizeDB, sizeof(int));
+    file.write((char*)db, sizeof(Product) * sizeDB);
+
+    file.close();
+    wcout << L"База данных сохранена.\n";
+}
+
+void loadDB()
+{
+    ifstream file(FILE_NAME, ios::binary);
+    if (!file)
+    {
+        wcout << L"Ошибка открытия файла!\n";
+        return;
+    }
+
+    delete[] db;
+
+    file.read((char*)&sizeDB, sizeof(int));
+    db = new Product[sizeDB];
+    file.read((char*)db, sizeof(Product) * sizeDB);
+
+    file.close();
+    dbLoaded = true;
+    wcout << L"База данных загружена.\n";
+}
+
+void addProduct(Product*& db, int& sizeDB)
+{
+    Product p;
+
+    // Очищаем буфер перед вводом строки
+    wcin.ignore(32767, '\n');
+
+    wcout << L"Наименование: ";
+    wcin.getline(p.name, 80);
+    if (wcslen(p.name) == 0)
+    {
+        wcout << L"Ошибка: пустое наименование!\n";
+        return;
+    }
+
+    wcout << L"Артикул: ";
+    while (!(wcin >> p.article))
+    {
+        wcout << L"Ошибка: нужно ввести число! Попробуйте ещё раз: ";
+        wcin.clear();
+        wcin.ignore(32767, '\n');
+    }
+
+    wcout << L"Количество: ";
+    while (!(wcin >> p.quantity) || p.quantity < 0)
+    {
+        wcout << L"Ошибка: количество не может быть отрицательным! Попробуйте ещё раз: ";
+        wcin.clear();
+        wcin.ignore(32767, '\n');
+    }
+
+    wcout << L"Цена: ";
+    while (!(wcin >> p.price) || p.price <= 0)
+    {
+        wcout << L"Ошибка: цена должна быть больше 0! Попробуйте ещё раз: ";
+        wcin.clear();
+        wcin.ignore(32767, '\n');
+    }
+
+    wcout << L"Скидка (0-100): ";
+    while (!(wcin >> p.discount) || p.discount < 0 || p.discount > 100)
+    {
+        wcout << L"Ошибка: скидка должна быть от 0 до 100! Попробуйте ещё раз: ";
+        wcin.clear();
+        wcin.ignore(32767, '\n');
+    }
+
+    // Добавляем товар в массив
+    Product* temp = new Product[sizeDB + 1];
+    for (int i = 0; i < sizeDB; i++)
+        temp[i] = db[i];
+    temp[sizeDB] = p;
+
+    delete[] db;
+    db = temp;
+    sizeDB++;
+
+    wcout << L"Товар успешно добавлен!\n";
+}
+
+void printAll()
+{
+    if (sizeDB == 0)
+    {
+        wcout << L"База данных пуста.\n";
+        return;
+    }
+
+    wcout << L"Артикул  Наименование        Цена     Кол-во  Скидка\n";
+    for (int i = 0; i < sizeDB; i++)
+    {
+        wcout.width(7); wcout << db[i].article << L"  ";
+        wcout.width(15); wcout << db[i].name << L"  ";
+        wcout.width(7); wcout << db[i].price << L"  ";
+        wcout.width(6); wcout << db[i].quantity << L"  ";
+        wcout.width(3); wcout << db[i].discount << L"%\n";
+    }
+}
+
+int findByArticle(long article)
+{
+    for (int i = 0; i < sizeDB; i++)
+        if (db[i].article == article)
+            return i;
+    return -1;
+}
+
+void searchProduct()
+{
+    long art;
+    wcout << L"Введите артикул: ";
+    wcin >> art;
+
+    int index = findByArticle(art);
+    if (index == -1)
+    {
+        wcout << L"Товар не найден.\n";
+        return;
+    }
+
+    wcout << L"Найден: " << db[index].name << L"\n";
+    wcout << L"1 - Изменить\n2 - Удалить\n";
+    int choice;
+    wcin >> choice;
+
+    if (choice == 1)
+    {
+        wcout << L"Новая цена: ";
+        wcin >> db[index].price;
+        wcout << L"Новое количество: ";
+        wcin >> db[index].quantity;
+        wcout << L"Новая скидка: ";
+        wcin >> db[index].discount;
+        wcout << L"Изменено.\n";
+    }
+    else if (choice == 2)
+    {
+        for (int i = index; i < sizeDB - 1; i++)
+            db[i] = db[i + 1];
+
+        sizeDB--;
+        wcout << L"Удалено.\n";
+    }
+}
+
+void printWithDiscount()
+{
+    bool found = false;
+    for (int i = 0; i < sizeDB; i++)
+        if (db[i].discount > 0)
+        {
+            wcout << db[i].name << L" (" << db[i].discount << L"%)\n";
+            found = true;
+        }
+    if (!found) wcout << L"Нет товаров со скидкой.\n";
+}
+
+void printNoStock()
+{
+    bool found = false;
+    for (int i = 0; i < sizeDB; i++)
+        if (db[i].quantity == 0)
+        {
+            wcout << db[i].name << L"\n";
+            found = true;
+        }
+    if (!found) wcout << L"Все товары есть в наличии.\n";
+}
+
+// ===== СОРТИРОВКА =====
+int cmpName(const void* a, const void* b)
+{
+    return wcscmp(((Product*)a)->name, ((Product*)b)->name);
+}
+
+int cmpArticle(const void* a, const void* b)
+{
+    long diff = ((Product*)a)->article - ((Product*)b)->article;
+    return (diff > 0) - (diff < 0);
+}
+
+int cmpQuantity(const void* a, const void* b)
+{
+    return ((Product*)a)->quantity - ((Product*)b)->quantity;
+}
+
+int cmpPrice(const void* a, const void* b)
+{
+    double diff = ((Product*)a)->price - ((Product*)b)->price;
+    return (diff > 0) - (diff < 0);
+}
+
+void sortMenu()
+{
+    wcout << L"1-Наименование 2-Артикул 3-Количество 4-Цена\n";
+    int c;
+    wcin >> c;
+
+    if (c == 1) qsort(db, sizeDB, sizeof(Product), cmpName);
+    else if (c == 2) qsort(db, sizeDB, sizeof(Product), cmpArticle);
+    else if (c == 3) qsort(db, sizeDB, sizeof(Product), cmpQuantity);
+    else if (c == 4) qsort(db, sizeDB, sizeof(Product), cmpPrice);
+    else
+    {
+        wcout << L"Неверный выбор!\n";
+        return;
+    }
+
+    wcout << L"Отсортировано.\n";
+}
+
+// ==================== MAIN ====================
+int main()
+{
+    setlocale(LC_ALL, ""); // подключаем поддержку русских букв
+    int choice;
+
+    do
+    {
+        wcout << L"\n1-Создать БД\n2-Загрузить БД\n3-Сохранить БД\n"
+                 L"4-Добавить товар\n5-Показать все\n6-Поиск\n"
+                 L"7-Товары со скидкой\n8-Нет в наличии\n9-Сортировка\n0-Выход\n";
+        wcin >> choice;
+
+        if ((choice > 2) && !dbLoaded)
+        {
+            wcout << L"Сначала создайте или загрузите БД!\n";
+            continue;
+        }
+
+        switch (choice)
+        {
+        case 1: createDB(); break;
+        case 2: loadDB(); break;
+        case 3: saveDB(); break;
+        case 4: addProduct(db, sizeDB); break;
+        case 5: printAll(); break;
+        case 6: searchProduct(); break;
+        case 7: printWithDiscount(); break;
+        case 8: printNoStock(); break;
+        case 9: sortMenu(); break;
+        case 0: wcout << L"Выход.\n"; break;
+        default: wcout << L"Неверный выбор!\n"; break;
+        }
+
+    } while (choice != 0);
+
+    delete[] db;
     return 0;
-}
-
-// Отображение меню
-void displayMenu() {
-    system("cls");
-    cout << "========== МЕНЮ УПРАВЛЕНИЯ БАЗОЙ ДАННЫХ ==========\n";
-    cout << "1. Создать новую БД\n";
-    cout << "2. Загрузить данные из БД\n";
-    cout << "3. Сохранить БД\n";
-    cout << "4. Добавить товар\n";
-    cout << "5. Вывести все товары\n";
-    cout << "6. Поиск товара по артикулу\n";
-    cout << "7. Вывести товары со скидкой\n";
-    cout << "8. Вывести отсутствующие товары\n";
-    cout << "9. Сортировать товары\n";
-    cout << "0. Выход\n";
-    cout << "================================================\n";
-}
-
-// Создание новой БД
-void createNewDB() {
-    if(database != nullptr) {
-        delete[] database;
-        database = nullptr;
-    }
-    
-    dbSize = 0;
-    isDatabaseLoaded = true;
-    
-    cout << "Новая база данных создана.\n";
-}
-
-// Загрузка БД из файла
-void loadDB() {
-    ifstream file(FILENAME, ios::binary);
-    
-    if(!file) {
-        cout << "Файл БД не найден. Создайте новую БД.\n";
-        return;
-    }
-    
-    // Определяем размер файла
-    file.seekg(0, ios::end);
-    long fileSize = file.tellg();
-    file.seekg(0, ios::beg);
-    
-    // Проверяем, что файл не пустой и размер кратен размеру структуры
-    if(fileSize <= 0 || fileSize % sizeof(Product) != 0) {
-        cout << "Ошибка: файл БД поврежден!\n";
-        file.close();
-        return;
-    }
-    
-    // Вычисляем количество записей
-    dbSize = fileSize / sizeof(Product);
-    
-    // Освобождаем старую память если есть
-    if(database != nullptr) {
-        delete[] database;
-    }
-    
-    // Выделяем память
-    database = new Product[dbSize];
-    
-    // Читаем данные
-    file.read((char*)database, fileSize);
-    
-    if(!file) {
-        cout << "Ошибка чтения файла!\n";
-        delete[] database;
-        database = nullptr;
-        dbSize = 0;
-        isDatabaseLoaded = false;
-        file.close();
-        return;
-    }
-    
-    file.close();
-    isDatabaseLoaded = true;
-    
-    cout << "БД загружена. Загружено " << dbSize << " товаров.\n";
-}
-
-// Сохранение БД в файл
-void saveDB() {
-    if(!isDatabaseLoaded || database == nullptr) {
-        cout << "Нет данных для сохранения!\n";
-        return;
-    }
-    
-    ofstream file(FILENAME, ios::binary);
-    
-    if(!file) {
-        cout << "Ошибка открытия файла для записи!\n";
-        return;
-    }
-    
-    file.write((char*)database, dbSize * sizeof(Product));
-    
-    if(!file) {
-        cout << "Ошибка записи в файл!\n";
-        file.close();
-        return;
-    }
-    
-    file.close();
-    cout << "БД сохранена. Сохранено " << dbSize << " товаров.\n";
-}
-
-// Добавление нового товара
-void addProduct() {
-    Product newProduct;
-    
-    clearInputBuffer(); // Очищаем буфер ввода
-    
-    // Ввод наименования
-    do {
-        cout << "Введите наименование товара (макс 79 символов): ";
-        cin.getline(newProduct.name, 80);
-        
-        if(strlen(newProduct.name) == 0) {
-            cout << "Наименование не может быть пустым!\n";
-        }
-    } while(strlen(newProduct.name) == 0);
-    
-    // Ввод артикула
-    cout << "Введите артикул: ";
-    while(!(cin >> newProduct.article) || newProduct.article <= 0) {
-        cout << "Неверный артикул! Введите положительное число: ";
-        cin.clear();
-        clearInputBuffer();
-    }
-    
-    // Ввод количества
-    cout << "Введите количество: ";
-    while(!(cin >> newProduct.quantity) || newProduct.quantity < 0) {
-        cout << "Неверное количество! Введите неотрицательное число: ";
-        cin.clear();
-        clearInputBuffer();
-    }
-    
-    // Ввод цены
-    cout << "Введите цену: ";
-    while(!(cin >> newProduct.price) || newProduct.price <= 0) {
-        cout << "Неверная цена! Введите положительное число: ";
-        cin.clear();
-        clearInputBuffer();
-    }
-    
-    // Ввод скидки
-    int tempDiscount;
-    cout << "Введите скидку (0-100%): ";
-    while(!(cin >> tempDiscount) || tempDiscount < 0 || tempDiscount > 100) {
-        cout << "Неверная скидка! Введите число от 0 до 100: ";
-        cin.clear();
-        clearInputBuffer();
-    }
-    newProduct.discount = static_cast<char>(tempDiscount);
-    
-    // Проверяем корректность данных
-    if(!isValidProduct(newProduct)) {
-        cout << "Ошибка: введены некорректные данные!\n";
-        return;
-    }
-    
-    // Создаем новый массив на 1 элемент больше
-    Product* newDatabase = new Product[dbSize + 1];
-    
-    // Копируем старые данные
-    for(int i = 0; i < dbSize; i++) {
-        newDatabase[i] = database[i];
-    }
-    
-    // Добавляем новый товар
-    newDatabase[dbSize] = newProduct;
-    
-    // Удаляем старый массив и заменяем на новый
-    if(database != nullptr) {
-        delete[] database;
-    }
-    
-    database = newDatabase;
-    dbSize++;
-    
-    cout << "Товар успешно добавлен!\n";
-}
-
-// Отображение всех товаров
-void displayAllProducts() {
-    if(dbSize == 0) {
-        cout << "База данных пуста.\n";
-        return;
-    }
-    
-    cout << "\n================================================================================\n";
-    cout << left << setw(15) << "Артикул" 
-         << setw(30) << "Наименование" 
-         << setw(15) << "Цена" 
-         << setw(15) << "Количество" 
-         << setw(10) << "Скидка(%)" << endl;
-    cout << "================================================================================\n";
-    
-    for(int i = 0; i < dbSize; i++) {
-        cout << left << setw(15) << database[i].article
-             << setw(30) << database[i].name
-             << setw(15) << fixed << setprecision(2) << database[i].price
-             << setw(15) << database[i].quantity
-             << setw(10) << (int)database[i].discount << endl;
-    }
-    cout << "================================================================================\n";
-}
-
-// Поиск по артикулу
-void searchByArticle() {
-    if(dbSize == 0) {
-        cout << "База данных пуста.\n";
-        return;
-    }
-    
-    long searchArticle;
-    cout << "Введите артикул для поиска: ";
-    cin >> searchArticle;
-    
-    bool found = false;
-    for(int i = 0; i < dbSize; i++) {
-        if(database[i].article == searchArticle) {
-            cout << "\nТовар найден:\n";
-            cout << "Артикул: " << database[i].article << endl;
-            cout << "Наименование: " << database[i].name << endl;
-            cout << "Цена: " << database[i].price << endl;
-            cout << "Количество: " << database[i].quantity << endl;
-            cout << "Скидка: " << (int)database[i].discount << "%" << endl;
-            
-            found = true;
-            
-            // Подменю для найденного товара
-            int choice;
-            cout << "\n1. Изменить данные\n";
-            cout << "2. Удалить товар\n";
-            cout << "0. Назад\n";
-            cout << "Выберите действие: ";
-            cin >> choice;
-            
-            switch(choice) {
-                case 1:
-                    editProduct(database[i]);
-                    break;
-                case 2:
-                    deleteProduct(i);
-                    break;
-                case 0:
-                    break;
-                default:
-                    cout << "Неверный выбор!\n";
-            }
-            
-            break;
-        }
-    }
-    
-    if(!found) {
-        cout << "Товар с артикулом " << searchArticle << " не найден.\n";
-    }
-}
-
-// Редактирование товара
-void editProduct(Product& product) {
-    clearInputBuffer();
-    
-    int choice;
-    do {
-        cout << "\nРедактирование товара:\n";
-        cout << "1. Изменить наименование\n";
-        cout << "2. Изменить артикул\n";
-        cout << "3. Изменить количество\n";
-        cout << "4. Изменить цену\n";
-        cout << "5. Изменить скидку\n";
-        cout << "0. Завершить редактирование\n";
-        cout << "Выберите поле для редактирования: ";
-        cin >> choice;
-        
-        clearInputBuffer();
-        
-        switch(choice) {
-            case 1: {
-                cout << "Текущее наименование: " << product.name << endl;
-                cout << "Введите новое наименование: ";
-                cin.getline(product.name, 80);
-                if(strlen(product.name) == 0) {
-                    cout << "Наименование не может быть пустым!\n";
-                    cout << "Введите наименование: ";
-                    cin.getline(product.name, 80);
-                }
-                break;
-            }
-            case 2: {
-                cout << "Текущий артикул: " << product.article << endl;
-                cout << "Введите новый артикул: ";
-                while(!(cin >> product.article) || product.article <= 0) {
-                    cout << "Неверный артикул! Введите положительное число: ";
-                    cin.clear();
-                    clearInputBuffer();
-                }
-                break;
-            }
-            case 3: {
-                cout << "Текущее количество: " << product.quantity << endl;
-                cout << "Введите новое количество: ";
-                while(!(cin >> product.quantity) || product.quantity < 0) {
-                    cout << "Неверное количество! Введите неотрицательное число: ";
-                    cin.clear();
-                    clearInputBuffer();
-                }
-                break;
-            }
-            case 4: {
-                cout << "Текущая цена: " << product.price << endl;
-                cout << "Введите новую цену: ";
-                while(!(cin >> product.price) || product.price <= 0) {
-                    cout << "Неверная цена! Введите положительное число: ";
-                    cin.clear();
-                    clearInputBuffer();
-                }
-                break;
-            }
-            case 5: {
-                cout << "Текущая скидка: " << (int)product.discount << "%" << endl;
-                int tempDiscount;
-                cout << "Введите новую скидку (0-100%): ";
-                while(!(cin >> tempDiscount) || tempDiscount < 0 || tempDiscount > 100) {
-                    cout << "Неверная скидка! Введите число от 0 до 100: ";
-                    cin.clear();
-                    clearInputBuffer();
-                }
-                product.discount = static_cast<char>(tempDiscount);
-                break;
-            }
-            case 0:
-                cout << "Редактирование завершено.\n";
-                break;
-            default:
-                cout << "Неверный выбор!\n";
-        }
-        
-        if(choice != 0 && !isValidProduct(product)) {
-            cout << "Ошибка: введены некорректные данные!\n";
-        }
-        
-    } while(choice != 0);
-}
-
-// Удаление товара
-void deleteProduct(int index) {
-    if(index < 0 || index >= dbSize) {
-        cout << "Неверный индекс товара!\n";
-        return;
-    }
-    
-    if(dbSize == 1) {
-        delete[] database;
-        database = nullptr;
-        dbSize = 0;
-        cout << "Товар удален. База данных теперь пуста.\n";
-        return;
-    }
-    
-    // Создаем новый массив на 1 элемент меньше
-    Product* newDatabase = new Product[dbSize - 1];
-    
-    // Копируем все кроме удаляемого элемента
-    for(int i = 0, j = 0; i < dbSize; i++) {
-        if(i != index) {
-            newDatabase[j++] = database[i];
-        }
-    }
-    
-    // Удаляем старый массив и заменяем на новый
-    delete[] database;
-    database = newDatabase;
-    dbSize--;
-    
-    cout << "Товар успешно удален.\n";
-}
-
-// Отображение товаров со скидкой
-void displayDiscountedProducts() {
-    if(dbSize == 0) {
-        cout << "База данных пуста.\n";
-        return;
-    }
-    
-    bool found = false;
-    cout << "\nТовары со скидкой:\n";
-    cout << "================================================================================\n";
-    cout << left << setw(15) << "Артикул" 
-         << setw(30) << "Наименование" 
-         << setw(15) << "Цена" 
-         << setw(15) << "Количество" 
-         << setw(10) << "Скидка(%)" << endl;
-    cout << "================================================================================\n";
-    
-    for(int i = 0; i < dbSize; i++) {
-        if(database[i].discount > 0) {
-            found = true;
-            cout << left << setw(15) << database[i].article
-                 << setw(30) << database[i].name
-                 << setw(15) << fixed << setprecision(2) << database[i].price
-                 << setw(15) << database[i].quantity
-                 << setw(10) << (int)database[i].discount << endl;
-        }
-    }
-    
-    if(!found) {
-        cout << "Товары со скидкой отсутствуют.\n";
-    }
-    cout << "================================================================================\n";
-}
-
-// Отображение отсутствующих товаров
-void displayOutOfStock() {
-    if(dbSize == 0) {
-        cout << "База данных пуста.\n";
-        return;
-    }
-    
-    bool found = false;
-    cout << "\nОтсутствующие товары (количество = 0):\n";
-    cout << "================================================================================\n";
-    cout << left << setw(15) << "Артикул" 
-         << setw(30) << "Наименование" 
-         << setw(15) << "Цена" 
-         << setw(15) << "Количество" 
-         << setw(10) << "Скидка(%)" << endl;
-    cout << "================================================================================\n";
-    
-    for(int i = 0; i < dbSize; i++) {
-        if(database[i].quantity == 0) {
-            found = true;
-            cout << left << setw(15) << database[i].article
-                 << setw(30) << database[i].name
-                 << setw(15) << fixed << setprecision(2) << database[i].price
-                 << setw(15) << database[i].quantity
-                 << setw(10) << (int)database[i].discount << endl;
-        }
-    }
-    
-    if(!found) {
-        cout << "Все товары есть в наличии.\n";
-    }
-    cout << "================================================================================\n";
-}
-
-// Сортировка товаров
-void sortProducts() {
-    if(dbSize == 0) {
-        cout << "База данных пуста.\n";
-        return;
-    }
-    
-    int choice;
-    cout << "\nСортировка по полю:\n";
-    cout << "1. По наименованию\n";
-    cout << "2. По артикулу\n";
-    cout << "3. По количеству\n";
-    cout << "4. По цене\n";
-    cout << "0. Отмена\n";
-    cout << "Выберите поле для сортировки: ";
-    cin >> choice;
-    
-    switch(choice) {
-        case 1:
-            qsort(database, dbSize, sizeof(Product), compareByName);
-            cout << "Сортировка по наименованию выполнена.\n";
-            break;
-        case 2:
-            qsort(database, dbSize, sizeof(Product), compareByArticle);
-            cout << "Сортировка по артикулу выполнена.\n";
-            break;
-        case 3:
-            qsort(database, dbSize, sizeof(Product), compareByQuantity);
-            cout << "Сортировка по количеству выполнена.\n";
-            break;
-        case 4:
-            qsort(database, dbSize, sizeof(Product), compareByPrice);
-            cout << "Сортировка по цене выполнена.\n";
-            break;
-        case 0:
-            cout << "Сортировка отменена.\n";
-            break;
-        default:
-            cout << "Неверный выбор!\n";
-    }
-}
-
-// Функции сравнения для qsort
-int compareByName(const void* a, const void* b) {
-    const Product* p1 = (const Product*)a;
-    const Product* p2 = (const Product*)b;
-    return strcmp(p1->name, p2->name);
-}
-
-int compareByArticle(const void* a, const void* b) {
-    const Product* p1 = (const Product*)a;
-    const Product* p2 = (const Product*)b;
-    return (p1->article > p2->article) - (p1->article < p2->article);
-}
-
-int compareByQuantity(const void* a, const void* b) {
-    const Product* p1 = (const Product*)a;
-    const Product* p2 = (const Product*)b;
-    return p1->quantity - p2->quantity;
-}
-
-int compareByPrice(const void* a, const void* b) {
-    const Product* p1 = (const Product*)a;
-    const Product* p2 = (const Product*)b;
-    return (p1->price > p2->price) - (p1->price < p2->price);
-}
-
-// Очистка буфера ввода
-void clearInputBuffer() {
-    cin.clear();
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-}
-
-// Проверка корректности данных товара
-bool isValidProduct(const Product& p) {
-    return (strlen(p.name) > 0 && 
-            p.article > 0 && 
-            p.quantity >= 0 && 
-            p.price > 0 && 
-            p.discount >= 0 && p.discount <= 100);
 }
